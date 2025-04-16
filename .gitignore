@@ -2,6 +2,7 @@
 __pycache__/
 *.py[cod]
 *$py.class
+*.cpython-39.pyc
 
 # Distribution / packaging
 .Python
