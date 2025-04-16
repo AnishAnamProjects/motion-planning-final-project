@@ -14,7 +14,7 @@ import numpy as np
 import time as time_module
 import random
 
-animation_frequency = 50
+animation_frequency = 5
 control_frequency = 200  # Hz for attitude control loop
 control_iterations = control_frequency / animation_frequency
 dt = 1.0 / control_frequency
