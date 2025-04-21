@@ -1,5 +1,7 @@
 # Python cache files
 __pycache__/
+models/__pycache__/
+utils/__pycache__/
 *.py[cod]
 *$py.class
 *.cpython-39.pyc
