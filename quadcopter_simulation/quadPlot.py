@@ -1,133 +1,69 @@
+### Updated quadPlot.py ###
 """
-author: Peter Huang
-email: hbd730@gmail.com
-license: BSD
-Please feel free to use and modify this, but keep the above information. Thanks!
+author: Peter Huang (modified)
+Visualize a single quadcopter, waypoints, and discovered voxels in 3D, with bounds enforcement
 """
-
-from mpl_toolkits.mplot3d import Axes3D
-from matplotlib.colors import cnames
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d.art3d import Poly3DCollection
-import matplotlib.animation as animation
 import numpy as np
-import sys
+from mpl_toolkits.mplot3d import Axes3D
+import matplotlib.pyplot as plt
+import matplotlib.animation as animation
 
-history = np.zeros((500,3))
-count = 0
-target_reached = False
-current_animation = None
+# Keep animation reference alive
+global_anim = None
 
-def plot_quad_3d(waypoints, get_world_frame, target_position=None):
+def plot_quad_3d(waypoints, get_world_frame, get_known_map, voxel_centers):
     """
-    get_world_frame is a function which return the "next" world frame to be drawn
+    waypoints: (M,3) array of waypoint coords (in world units)
+    get_world_frame: function(i)-> world_frame (3x6)
+    get_known_map: function(i)-> known_map ndarray (nx,ny,nz)
+    voxel_centers: (nx*ny*nz,3) coords of voxel centers
     """
-    global target_reached, current_animation
-    target_reached = False
-    
+    global global_anim
+
     fig = plt.figure()
-    ax = fig.add_axes([0, 0, 1, 1], projection='3d')
-    ax.plot([], [], [], '-', c='cyan')[0]
-    ax.plot([], [], [], '-', c='red')[0]
-    ax.plot([], [], [], '-', c='blue', marker='o', markevery=2)[0]
-    ax.plot([], [], [], '.', c='red', markersize=4)[0]
-    ax.plot([], [], [], '.', c='blue', markersize=2)[0]
-    
-    # Plot target
-    if target_position is not None:
-        ax.scatter([target_position[0]], [target_position[1]], [target_position[2]], c='r', s=100)
-    
-    set_limit()
-    plot_waypoints(waypoints)
-    
-    def anim_callback(i):
-        global target_reached, current_animation
-        if target_reached:
-            if current_animation:
-                current_animation.event_source.stop()
-            plt.close()
+    ax = fig.add_axes([0,0,1,1], projection='3d')
+    set_limit(ax)
+    plot_waypoints(ax, waypoints)
+
+    quad_scatter = ax.scatter([], [], [], c='b', s=60, label='Quad')
+    free_scatter = ax.scatter([], [], [], c='gray', s=4, alpha=0.3, label='Free')
+    obs_scatter  = ax.scatter([], [], [], c='red', s=20, alpha=1, label='Obstacle')
+    goal_scatter = ax.scatter([], [], [], c='green',   s=6, alpha=0.6, label='Discovered Goal')
+    ax.legend(loc='upper right')
+
+    def anim_callback(frame_idx):
+        wf = get_world_frame(frame_idx)
+        if wf is None:
+            if global_anim:
+                global_anim.event_source.stop()
             return []
-            
-        frame = get_world_frame(i)
-        if frame is None:
-            target_reached = True
-            if current_animation:
-                current_animation.event_source.stop()
-            plt.close()
-            return []
-            
-        set_frame(frame)
-        return []
+        wf = np.asarray(wf)
+        pos = wf[:,4]
+        quad_scatter._offsets3d = ([pos[0]], [pos[1]], [pos[2]])
 
-    # Create animation with a maximum number of frames
-    current_animation = animation.FuncAnimation(fig,
-                               anim_callback,
-                               frames=1000,  # Maximum number of frames
-                               interval=10,
-                               blit=False,
-                               repeat=False)
+        known = get_known_map(frame_idx).ravel()
+        centers = voxel_centers
+        idx_free = np.where(known == 0)[0]
+        free_scatter._offsets3d = (centers[idx_free,0], centers[idx_free,1], centers[idx_free,2])
+        idx_obs  = np.where(known == 1)[0]
+        obs_scatter._offsets3d  = (centers[idx_obs,0], centers[idx_obs,1], centers[idx_obs,2])
+        idx_goal = np.where(known == 2)[0]
+        goal_scatter._offsets3d = (centers[idx_goal,0], centers[idx_goal,1], centers[idx_goal,2])
+        return [quad_scatter, free_scatter, obs_scatter, goal_scatter]
 
-    if len(sys.argv) > 1 and sys.argv[1] == 'save':
-        print("saving")
-        current_animation.save('sim.gif', dpi=80, writer='imagemagick', fps=60)
-    else:
-        plt.show()
+    global_anim = animation.FuncAnimation(
+        fig, anim_callback, frames=500, interval=20, blit=False, repeat=False
+    )
+    plt.show()
 
-def plot_waypoints(waypoints):
-    ax = plt.gca()
-    lines = ax.get_lines()
-    lines[-2].set_data(waypoints[:,0], waypoints[:,1])
-    lines[-2].set_3d_properties(waypoints[:,2])
 
-def set_limit():
-    ax = plt.gca()
+def set_limit(ax):
     ax.set_xlim(0, 10)
     ax.set_ylim(0, 10)
     ax.set_zlim(0, 10)
-    
-    # Make the grid look like squares
-    ax.set_box_aspect([1, 1, 1])  # This ensures equal aspect ratio
-    
-    # Add grid lines
+    ax.set_box_aspect([1,1,1])
     ax.grid(True)
-    ax.set_xticks(np.arange(0, 11, 1))
-    ax.set_yticks(np.arange(0, 11, 1))
-    ax.set_zticks(np.arange(0, 11, 1))
 
-def set_frame(frame):
-    # convert 3x6 world_frame matrix into three line_data objects which is 3x2 (row:point index, column:x,y,z)
-    lines_data = [frame[:,[0,2]], frame[:,[1,3]], frame[:,[4,5]]]
-    ax = plt.gca()
-    lines = ax.get_lines()
-    for line, line_data in zip(lines[:3], lines_data):
-        x, y, z = line_data
-        line.set_data(x, y)
-        line.set_3d_properties(z)
 
-    # Plot search radius sphere around the drone
-    drone_pos = frame[:,4]
-    u = np.linspace(0, 2 * np.pi, 100)
-    v = np.linspace(0, np.pi, 100)
-    x = 3 * np.outer(np.cos(u), np.sin(v)) + drone_pos[0]
-    y = 3 * np.outer(np.sin(u), np.sin(v)) + drone_pos[1]
-    z = 3 * np.outer(np.ones(np.size(u)), np.cos(v)) + drone_pos[2]
-    
-    # Remove previous sphere if it exists
-    for artist in ax.collections:
-        if isinstance(artist, Poly3DCollection):
-            artist.remove()
-    
-    # Add new sphere
-    ax.plot_surface(x, y, z, color='g', alpha=0.2)
-
-    global history, count
-    # plot history trajectory
-    history[count] = frame[:,4]
-    if count < np.size(history, 0) - 1:
-        count += 1
-    zline = history[:count,-1]
-    xline = history[:count,0]
-    yline = history[:count,1]
-    if(lines != []):
-        lines[-1].set_data(xline, yline)
-        lines[-1].set_3d_properties(zline)
+def plot_waypoints(ax, waypoints):
+    ax.plot(waypoints[:,0], waypoints[:,1], waypoints[:,2], 'g--o', label='Waypoints')
