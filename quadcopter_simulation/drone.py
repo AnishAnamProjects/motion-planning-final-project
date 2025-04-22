@@ -7,7 +7,6 @@
 
 from model.quadcopter import Quadcopter
 
-from runsim import attitudeControl
 import trajGen3D
 import controller
 import numpy as np
