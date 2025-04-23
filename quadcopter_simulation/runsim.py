@@ -7,6 +7,7 @@ Trajectory now starts from the quadcopter's initial position to avoid large jump
 import numpy as np
 import random
 from quadPlot import plot_quad_3d
+from quadPlot import *
 import controller
 import trajGen3D
 from model.quadcopter import Quadcopter
@@ -17,11 +18,6 @@ control_frequency   = 200  # Hz
 dt = 1.0 / control_frequency
 control_iterations  = control_frequency // animation_frequency
 
-# World bounds
-x_min, x_max = 0.0, 10.0
-y_min, y_max = 0.0, 10.0
-z_min, z_max = 0.0, 10.0
-
 # Voxel grid for sensing (unchanged)
 nx, ny, nz = 20, 20, 20
 xs = np.linspace(x_min, x_max, nx)
@@ -29,9 +25,11 @@ ys = np.linspace(y_min, y_max, ny)
 zs = np.linspace(z_min, z_max, nz)
 Xc, Yc, Zc = np.meshgrid(xs, ys, zs, indexing='ij')
 voxel_centers = np.stack([Xc.ravel(), Yc.ravel(), Zc.ravel()], axis=1)
+
 # Occupancy maps: 0=free,1=obs,2=goal,255=unknown
 truth_map = np.zeros((nx,ny,nz), dtype=np.uint8)
 known_map = 255 * np.ones_like(truth_map)
+
 # Obstacles defined as a box region
 # Define voxel-index bounds for the obstacle box (inclusive low, exclusive high)
 box_min = np.array([3, 3, 1], dtype=int)   # x from 3 to 6, y from 3 to 6, z from 1 to 3

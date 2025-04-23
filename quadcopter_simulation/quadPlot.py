@@ -8,6 +8,11 @@ from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
+# Define world limits and grid tick spacing
+x_min, x_max, xtick = 0.0, 100.0, 5
+y_min, y_max, ytick = 0.0, 50.0, 5
+z_min, z_max, ztick = 0.0, 5.0, 1
+
 # Keep animation reference alive
 global_anim = None
 
@@ -58,11 +63,20 @@ def plot_quad_3d(waypoints, get_world_frame, get_known_map, voxel_centers):
 
 
 def set_limit(ax):
-    ax.set_xlim(0, 10)
-    ax.set_ylim(0, 10)
-    ax.set_zlim(0, 10)
-    ax.set_box_aspect([1,1,1])
+
+    # ax = plt.gca()
+    ax.set_xlim(0, x_max)
+    ax.set_ylim(0, y_max)
+    ax.set_zlim(0, z_max)
+
+    # Make the grid box the size of the world limit dimensions
+    ax.set_aspect('equal')
+    
+    # Add grid lines
     ax.grid(True)
+    ax.set_xticks(np.arange(0, x_max+1, xtick))
+    ax.set_yticks(np.arange(0, y_max+1, ytick))
+    ax.set_zticks(np.arange(0, z_max+1, ztick))
 
 
 def plot_waypoints(ax, waypoints):
