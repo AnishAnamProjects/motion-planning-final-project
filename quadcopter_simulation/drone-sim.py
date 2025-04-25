@@ -1,28 +1,47 @@
 from drone import Drone
 import trajGen3D
 import controller
+import pointcloud
 from runsim import *
 import numpy as np
 import random
 from quadPlot import plot_quad_3d
 
+lowres_filename = "resources/Industrial_full_scene_2.0lowres_lessfloor.ply"
+medres_filename = "resources/Industrial_main_part_1.0medres.ply"
+hires_filename = "resources/Industrial_full_scene_0.5hires_lessfloor.ply"
+
 class DroneSimulation:
-    def __init__(self, n_drones=4, space_limit=10.0):
+    def __init__(self, filename = "", cloud_resolution = 1.0, n_drones=4, space_limit=10.0):
+        '''
+        cloud_resolution = how far apart the cloud points are
+        '''
+
         # Simulation parameters
+        self.cloud_res = 1/cloud_resolution
         self.animation_frequency = 30
-        self.dt = 1.0 / self.animation_frequency
+        self.dt = 5.0 / self.animation_frequency
         self.space_limit = space_limit
         self.n_drones = n_drones
         self.SAFE_DISTANCE = 1.5  # Minimum distance between drones
         self.SPEED = 0.1  # Units per frame
-        
-        # World bounds
-        self.x_min, self.x_max = 0.0, space_limit
-        self.y_min, self.y_max = 0.0, space_limit
-        self.z_min, self.z_max = 0.0, space_limit
+
+        # # World bounds
+        # self.x_min, self.x_max = 0.0, space_limit
+        # self.y_min, self.y_max = 0.0, space_limit
+        # self.z_min, self.z_max = 0.0, space_limit
+
+        # Get world limits (mins and maxes) from point cloud
+        self.x_min, self.x_max, self.y_min, self.y_max, self.z_min, self.z_max = pointcloud.get_min_max(filename)
+        # World limits to be sent to quadPlot.py
+        self.limits = (self.x_min, self.x_max, self.y_min, self.y_max, self.z_min, self.z_max)
         
         # Voxel grid for sensing
-        self.nx, self.ny, self.nz = 20, 20, 20
+        values = (self.x_max, self.y_max, self.z_max)
+        self.nx, self.ny, self.nz = tuple(values * self.cloud_res for values in values)
+        self.nx = int(self.nx)
+        self.ny = int(self.ny)
+        self.nz = int(self.nz)
         self.xs = np.linspace(self.x_min, self.x_max, self.nx)
         self.ys = np.linspace(self.y_min, self.y_max, self.ny)
         self.zs = np.linspace(self.z_min, self.z_max, self.nz)
@@ -188,28 +207,45 @@ class DroneSimulation:
             all_waypoints,
             self.control_loop,
             lambda idx: self.known_map,
-            self.voxel_centers
+            self.voxel_centers,
+            self.limits
         )
 
-    def generate_waypoints(self, num_drones, space_limit=10.0):
+    # def generate_waypoints(self, num_drones, space_limit=10.0):
+    #     waypoints = [
+    #         np.array([[0, 0, 8], [self.space_limit, 0, 8]]),  # Drone 0: front left to front right
+    #         np.array([[self.space_limit, 0, 8], [self.space_limit, self.space_limit, 8]]),  # Drone 1: front right to back right
+    #         np.array([[0, self.space_limit, 8], [0, 0, 8]]),  # Drone 2: back left to front left
+    #         np.array([[self.space_limit, self.space_limit, 8], [0, self.space_limit, 8]])   # Drone 3: back right to back left
+    #     ]
+    #     return waypoints
+    
+    def generate_waypoints(self, num_drones, limits):
+
+        x_min, x_max, y_min, y_max, z_min, z_max = limits
+
         waypoints = [
-            np.array([[0, 0, 8], [self.space_limit, 0, 8]]),  # Drone 0: front left to front right
-            np.array([[self.space_limit, 0, 8], [self.space_limit, self.space_limit, 8]]),  # Drone 1: front right to back right
-            np.array([[0, self.space_limit, 8], [0, 0, 8]]),  # Drone 2: back left to front left
-            np.array([[self.space_limit, self.space_limit, 8], [0, self.space_limit, 8]])   # Drone 3: back right to back left
+            np.array([[0, 0, 8], [x_max, 0, 8]]),  # Drone 0: front left to front right
+            np.array([[x_max, 0, 8], [x_max, y_max, 8]]),  # Drone 1: front right to back right
+            np.array([[0, y_max, 8], [0, 0, 8]]),  # Drone 2: back left to front left
+            np.array([[x_max, y_max, 8], [0, y_max, 8]])   # Drone 3: back right to back left
         ]
         return waypoints
 
 # Example usage
 if __name__ == "__main__":
+
+    # # Visualize the point cloud being used
+    # pointcloud.Visualize.open3D(hires_filename)
+
     # Create simulation
-    sim = DroneSimulation(n_drones=4, space_limit=10.0)
+    sim = DroneSimulation(medres_filename, cloud_resolution = 1.0, n_drones=4, space_limit=10.0)
     
     # Initialize drones
     sim.initialize_drones()
     
     # Set waypoints (example: each drone goes to a corner)
-    waypoints = sim.generate_waypoints(4, 10.0)
+    waypoints = sim.generate_waypoints(4, sim.limits)
     
     sim.set_waypoints(waypoints)
     

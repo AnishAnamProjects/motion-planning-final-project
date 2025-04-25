@@ -1,3 +1,6 @@
 matplotlib
 numpy
 scipy
+opend3d
+trimesh
+plyfile

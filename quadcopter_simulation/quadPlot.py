@@ -7,6 +7,7 @@ import numpy as np
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
+import pointcloud
 
 # Define world limits and grid tick spacing
 x_min, x_max, xtick = 0.0, 10.0, 1
@@ -16,18 +17,19 @@ z_min, z_max, ztick = 0.0, 10.0, 1
 # Keep animation reference alive
 global_anim = None
 
-def plot_quad_3d(waypoints, get_world_frame, get_known_map, voxel_centers):
+def plot_quad_3d(waypoints, get_world_frame, get_known_map, voxel_centers, limits):
     """
     waypoints: (M,3) array of waypoint coords (in world units)
     get_world_frame: function(i)-> world_frame (N,3,6) for N drones
     get_known_map: function(i)-> known_map ndarray (nx,ny,nz)
     voxel_centers: (nx*ny*nz,3) coords of voxel centers
     """
+
     global global_anim
 
     fig = plt.figure()
     ax = fig.add_axes([0,0,1,1], projection='3d')
-    set_limit(ax)
+    set_limit(ax, limits)
     plot_waypoints(ax, waypoints)
 
     drone_colors = ['b', 'g', 'r', 'y']  # Add more colors if needed but note they end up in the legend
@@ -73,7 +75,28 @@ def plot_quad_3d(waypoints, get_world_frame, get_known_map, voxel_centers):
     )
     plt.show()
 
-def set_limit(ax):
+# set tick according to max limit
+def set_tick(limit):
+
+    if limit <= 5:
+        return 1
+    elif limit <= 10:
+        return 2
+    elif limit <= 20:
+        return 5
+    elif limit <= 200:
+        return 10
+    else:
+        return 100
+
+def set_limit(ax, limits):
+
+    x_min, x_max, y_min, y_max, z_min, z_max = limits
+
+    xtick = set_tick(x_max)
+    ytick = set_tick(y_max)
+    ztick = set_tick(z_max)
+
     ax.set_xlim(x_min, x_max)
     ax.set_ylim(y_min, y_max)
     ax.set_zlim(z_min, z_max)
