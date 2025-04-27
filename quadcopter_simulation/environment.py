@@ -3,7 +3,7 @@ import numpy as np
 from pointcloud import *
 
 class Environment:
-    def __init__(self, goal_position, filename, resolution=0.1):
+    def __init__(self, goal_position, filename, resolution=50):
         '''
         Initialize the environment with a point cloud
         '''
@@ -24,27 +24,26 @@ class Environment:
         self.goal = goal_position
 
         # define the grid resolution
-        self.resolution = int(1/resolution)
+        self.resolution = resolution
 
         self.obstacle_map = self.generate_obstacle_map()
-    def show(self):
+    def show(self, drone_trajectories=None):
         '''
         Show the point cloud in Open3D
         '''
         # Visualize the point cloud
-        o3d.visualization.draw_geometries([self.point_cloud], mesh_show_wireframe=True)
+        o3d.visualization.draw_geometries([self.point_cloud])
         
-        #Visualize.plyfile3D(self.file)
 
-    def generate_obstacle_map(self, resolution=0.1):
+    def generate_obstacle_map(self):
 
         '''
         Generate a truth map from the point cloud
         '''
         # Create a 3D grid based on the limits of the point cloud
-        x_bins = np.linspace(self.x_min, self.x_max, self.resolution)
-        y_bins = np.linspace(self.y_min, self.y_max, self.resolution)
-        z_bins = np.linspace(self.z_min, self.z_max, self.resolution)
+        x_bins = np.linspace(self.x_min, self.x_max, self.resolution + 1)
+        y_bins = np.linspace(self.y_min, self.y_max, self.resolution + 1)
+        z_bins = np.linspace(self.z_min, self.z_max, self.resolution + 1)
 
         # Create a 3D histogram to count points in each voxel
         hist, edges = np.histogramdd(np.asarray(self.point_cloud.points), bins=(x_bins, y_bins, z_bins))
@@ -79,5 +78,5 @@ class Environment:
         z = int((pos[2] - self.z_min) / (self.z_max - self.z_min) * self.resolution)
         return (x, y, z)
 
-industrial = Environment(goal_position=(10, 10, 10), filename="resources/Industrial_full_scene_0.5hires_lessfloor.ply", resolution=0.01)
-industrial.show()
+#industrial = Environment(goal_position=(10, 10, 10), filename="resources/Industrial_full_scene_0.5hires_lessfloor.ply", resolution=0.01)
+#industrial.show()
