@@ -75,7 +75,7 @@ def plot_quad_3d(waypoints, get_world_frame, get_known_map, voxel_centers, point
         return quad_scatters + [free_scatter, obs_scatter, goal_scatter]
 
     global_anim = animation.FuncAnimation(
-        fig, anim_callback, frames=500, interval=20, blit=False, repeat=False
+        fig, anim_callback, frames=2000, interval=20, blit=False, repeat=False
     )
     plt.show()
 

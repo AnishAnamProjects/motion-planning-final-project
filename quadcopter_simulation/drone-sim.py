@@ -26,7 +26,7 @@ class DroneSimulation:
         self.SAFE_DISTANCE = 1.5  # Minimum distance between drones
         self.SPEED = 0.1  # Units per frame
 
-        # # World bounds
+        # # World bounds hard coded
         # self.x_min, self.x_max = 0.0, space_limit
         # self.y_min, self.y_max = 0.0, space_limit
         # self.z_min, self.z_max = 0.0, space_limit
@@ -236,6 +236,7 @@ class DroneSimulation:
             self.control_loop,
             lambda idx: self.known_map,
             self.voxel_centers,
+            self.point_cloud,
             self.limits
         )
 
