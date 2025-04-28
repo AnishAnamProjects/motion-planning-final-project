@@ -31,17 +31,38 @@ class DroneSimulation:
         # self.y_min, self.y_max = 0.0, space_limit
         # self.z_min, self.z_max = 0.0, space_limit
 
-        # Get world limits (mins and maxes) from point cloud
+        # # World bounds from point cloud
         self.x_min, self.x_max, self.y_min, self.y_max, self.z_min, self.z_max = pointcloud.get_min_max(filename)
-        # World limits to be sent to quadPlot.py
+        
+        # # World limits to be sent to quadPlot.py
         self.limits = (self.x_min, self.x_max, self.y_min, self.y_max, self.z_min, self.z_max)
+
+        # # points_decimal = pointcloud.get_points_o3d(filename)
+        # # rounded_points = np.around(points_decimal, decimals=0) # round up to nearest int
+        # # self.points = rounded_points.astype(int) # remove the decimal
+
+        # Get the point cloud, round the coordinates and set the points to integers
+        # so they can be added to the environment as an obstacles
+        self.cloud_x, self.cloud_y, self.cloud_z = pointcloud.get_points(filename)
+        self.point_cloud = (self.cloud_x, self.cloud_y, self.cloud_z)
+        self.cloud_x = np.round(self.cloud_x, 1)
+        self.cloud_y = np.round(self.cloud_y, 1)
+        self.cloud_z = np.round(self.cloud_z, 1)
+        self.cloud_x = self.cloud_x.astype(int) # = int(self.cloud_x)
+        self.cloud_y = self.cloud_y.astype(int) # = int(self.cloud_y)
+        self.cloud_z = self.cloud_z.astype(int) # = int(self.cloud_z)
+        self.point_cloud = (self.cloud_x, self.cloud_y, self.cloud_z)
+
         
         # Voxel grid for sensing
         values = (self.x_max, self.y_max, self.z_max)
         self.nx, self.ny, self.nz = tuple(values * self.cloud_res for values in values)
-        self.nx = int(self.nx)
-        self.ny = int(self.ny)
-        self.nz = int(self.nz)
+        self.nx = round(self.nx, 1)
+        self.ny = round(self.ny, 1)
+        self.nz = round(self.nz, 1)
+        self.nx = int(self.nx + 1)
+        self.ny = int(self.ny + 1)
+        self.nz = int(self.nz + 1)
         self.xs = np.linspace(self.x_min, self.x_max, self.nx)
         self.ys = np.linspace(self.y_min, self.y_max, self.ny)
         self.zs = np.linspace(self.z_min, self.z_max, self.nz)
@@ -66,18 +87,24 @@ class DroneSimulation:
         
     def setup_environment(self):
         """Add random obstacles to the environment"""
-        num_obstacles = 3
-        for _ in range(num_obstacles):
-            box_min = np.array([
-                random.randint(2, self.nx-4),
-                random.randint(2, self.ny-4),
-                random.randint(1, self.nz-4)
-            ])
-            box_size = np.array([3, 3, 3])
-            box_max = box_min + box_size
-            self.truth_map[box_min[0]:box_max[0], 
-                          box_min[1]:box_max[1], 
-                          box_min[2]:box_max[2]] = 1
+
+        # Add points from point cloud to environment as obstacles
+        # points = np.column_stack((self.cloud_x, self.cloud_y, self.cloud_z))
+        self.truth_map[self.point_cloud] = 1
+
+        # # Add random 4 x 4 cube obstacle to the environment
+        # num_obstacles = 3
+        # for _ in range(num_obstacles):
+        #     box_min = np.array([
+        #         random.randint(2, self.nx-4),
+        #         random.randint(2, self.ny-4),
+        #         random.randint(1, self.nz-4)
+        #     ])
+        #     box_size = np.array([3, 3, 3])
+        #     box_max = box_min + box_size
+        #     self.truth_map[box_min[0]:box_max[0], 
+        #                   box_min[1]:box_max[1], 
+        #                   box_min[2]:box_max[2]] = 1
     
     def world_to_grid(self, pos):
         """Convert world coordinates to grid indices"""
@@ -187,8 +214,9 @@ class DroneSimulation:
                 if not self.check_collision(new_pos):
                     current_pos = new_pos
                 else:
-                    print(f"Drone {i} detected collision, stopping")
-                    self.done[i] = True
+                    # print(f"Drone {i} detected collision, stopping")
+                    # self.done[i] = True
+                    current_pos = new_pos
             
             # Update drone position and known map
             self.drones[i].state[0:3] = current_pos  # Update position in state vector

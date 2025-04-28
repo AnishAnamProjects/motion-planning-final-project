@@ -17,7 +17,7 @@ z_min, z_max, ztick = 0.0, 10.0, 1
 # Keep animation reference alive
 global_anim = None
 
-def plot_quad_3d(waypoints, get_world_frame, get_known_map, voxel_centers, limits):
+def plot_quad_3d(waypoints, get_world_frame, get_known_map, voxel_centers, point_cloud, limits):
     """
     waypoints: (M,3) array of waypoint coords (in world units)
     get_world_frame: function(i)-> world_frame (N,3,6) for N drones
@@ -38,8 +38,12 @@ def plot_quad_3d(waypoints, get_world_frame, get_known_map, voxel_centers, limit
         for i, c in enumerate(drone_colors)
     ]
     
+    # # code for visualizing the point cloud obstacle on the plot
+    # x, y, z, = (point_cloud)
+    # visualize = ax.scatter(x, y, z, c=z, marker='.', cmap='viridis', alpha=0.1)
+
     free_scatter = ax.scatter([], [], [], c='gray', s=4, alpha=0.3, label='Free')
-    obs_scatter  = ax.scatter([], [], [], c='red', s=20, alpha=1, label='Obstacle')
+    obs_scatter  = ax.scatter([], [], [], c='red', s=20, alpha=0.2, label='Obstacle')
     goal_scatter = ax.scatter([], [], [], c='green', s=6, alpha=0.6, label='Discovered Goal')
     ax.legend(loc='upper right')
 
