@@ -15,7 +15,7 @@ from utils.utils import RPYToRot, RotToQuat, RotToRPY
 dt = 0.01
 class Drone(Quadcopter):
     
-    def __init__(self, start_state, env = None):
+    def __init__(self, start_state, env = None, knowledge_map = None):
         """Initialize the drone with a start state
         
         start_state: [x, y, z, roll, pitch, yaw]
@@ -55,7 +55,7 @@ class Drone(Quadcopter):
                 print("Reached the target position")
                 break
             #survey the environment
-            #self.survey_environment()
+            self.survey_environment()
 
             
             # Catch obstacle collision exceptions
@@ -63,12 +63,12 @@ class Drone(Quadcopter):
                 #print("Collision detected!")
                 break
                 
-    def survey_environment(self, environment):
+    def survey_environment(self):
         # return a list of every coordinate within sensing range
         # and a list of the status of each coordinate
 
         # figure out the voxels in the sensing range
-        self.sensing_radius = 20
+        self.sensing_radius = 5
         start_voxel = self.current_voxel()
         search_range_x = np.arange(start_voxel[0] - self.sensing_radius, start_voxel[0] + self.sensing_radius)
         search_range_y = np.arange(start_voxel[1] - self.sensing_radius, start_voxel[1] + self.sensing_radius)
@@ -78,8 +78,10 @@ class Drone(Quadcopter):
         
         # query the environment for status of each voxel
         for voxel in search_range:
-            status = environment.query(voxel)
-            self.inform_overmind(voxel, status)
+            status = self.environment.query(voxel.tolist())
+            #print("Voxel: ", voxel, "Status: ", status)
+
+            #self.inform_overmind(voxel, status)
 
         
     def current_voxel(self):
