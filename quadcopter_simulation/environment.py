@@ -59,13 +59,12 @@ class Environment:
         if (voxel[0] < 0 or voxel[0] >= self.resolution or
             voxel[1] < 0 or voxel[1] >= self.resolution or
             voxel[2] < 0 or voxel[2] >= self.resolution):
-            print("Voxel out of bounds")
             return "Out of bounds"
         # Check if the voxel is the goal position
-        elif voxel == self.world_to_grid(self.goal):
+        elif np.all(voxel == self.world_to_grid(self.goal)):
             return "Goal"
         # check if the voxel is in the obstacle map
-        elif self.obstacle_map[voxel]:
+        elif self.obstacle_map[voxel[0], voxel[1], voxel[2]]:
             return "Obstacle"
         # otherwise the voxel is free
         else:

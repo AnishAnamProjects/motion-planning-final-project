@@ -18,6 +18,8 @@ goal = (10, 10, 10)
 industrial = Environment(goal_position=goal, filename=file, resolution=50)
 print(industrial.query((4,6,0)))
 
+# intialize the unknown map
+knowledge_map = np.zeros(industrial.obstacle_map.shape)  # Initialize the knowledge map with zeros
 
 start_positions = np.meshgrid(np.arange(0, n_drones, 1), np.arange(0, n_drones, 1))
 start_positions = np.array(start_positions).T.reshape(-1, 2)  # Reshape to get pairs of coordinates
@@ -29,7 +31,7 @@ for i in range(n_drones):
     pos = start_positions[i]  # Start each drone at a different position
     attitude = (0, 0, 0)  # Initial attitude (roll, pitch, yaw)
     start_state = [pos, attitude]
-    drones[i] = Drone(start_state, industrial)  # Initialize each drone with its start state and environment
+    drones[i] = Drone(start_state, industrial, knowledge_map)  # Initialize each drone with its start state and environment
 
 # Generate Waypoints. Fill this in later with motion planner
 for i in range(n_drones):
